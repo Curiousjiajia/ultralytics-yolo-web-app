@@ -1,0 +1,57 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# YOLO Web App - 忽略运行时生成的文件
+uploads/
+results/
+yolo_results.json
+*.log
+
+# YOLO 模型文件（太大，建议单独下载）
+*.pt
+*.pth
+*.onnx
+*.engine
+
+# 测试文件
+test_*.py
+my-testpicture/
+
+# 数据库（如果使用）
+*.db
+*.sqlite

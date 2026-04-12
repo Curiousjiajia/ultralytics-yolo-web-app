@@ -1,0 +1,16 @@
+from ultralytics import YOLO
+
+# 1. 加载预训练模型（自动下载yolo26n.pt）
+model = YOLO("yolo26n.pt")
+
+# 2. 对图片进行预测（支持本地图片/网络图片/视频/摄像头）
+results = model("https://ultralytics.com/images/bus.jpg")
+
+# 3. 展示结果
+for result in results:
+    # 显示图片
+    result.show()
+    # 保存图片到本地
+    result.save("bus_detected.jpg")
+    # 打印检测到的目标信息
+    print(result.boxes)
