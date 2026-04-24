@@ -1,26 +1,29 @@
-﻿import os
-import uuid
 import base64
+import os
+import uuid
 from pathlib import Path
-from flask import Flask, request, jsonify, send_from_directory
+
 import cv2
+from flask import Flask, jsonify, request, send_from_directory
+
 from ultralytics import YOLO
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-RESULTS_FOLDER = 'results'
+UPLOAD_FOLDER = "uploads"
+RESULTS_FOLDER = "results"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(RESULTS_FOLDER, exist_ok=True)
 
 print("Loading YOLO model...")
-model = YOLO('yolo26n.pt')
+model = YOLO("yolo26n.pt")
 print("✅ Model loaded!\n")
 
 MAX_UPLOAD_IMAGES = 4
 
-@app.route('/')
+
+@app.route("/")
 def index():
-    html_content = '''<!DOCTYPE html>
+    html_content = """<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
@@ -494,76 +497,78 @@ def index():
         });
     </script>
 </body>
-</html>'''
+</html>"""
     return html_content
 
-@app.route('/upload', methods=['POST'])
+
+@app.route("/upload", methods=["POST"])
 def upload():
-    if 'image' not in request.files:
-        return jsonify({'error': 'No image'}), 400
-    
-    file = request.files['image']
-    if file.filename == '':
-        return jsonify({'error': 'No file'}), 400
-    
-    ext = file.filename.rsplit('.', 1)[1].lower() if '.' in file.filename else 'jpg'
+    if "image" not in request.files:
+        return jsonify({"error": "No image"}), 400
+
+    file = request.files["image"]
+    if file.filename == "":
+        return jsonify({"error": "No file"}), 400
+
+    ext = file.filename.rsplit(".", 1)[1].lower() if "." in file.filename else "jpg"
     unique_name = f"{uuid.uuid4().hex}.{ext}"
     upload_path = os.path.join(UPLOAD_FOLDER, unique_name)
     file.save(upload_path)
-    
+
     try:
         results = model(upload_path, verbose=False)
         result = results[0]
-        
+
         output_name = f"{Path(upload_path).stem}_result.jpg"
         output_path = os.path.join(RESULTS_FOLDER, output_name)
         annotated = result.plot()
         cv2.imwrite(output_path, annotated)
-        
+
         detections = []
         if result.boxes is not None and len(result.boxes) > 0:
             boxes = result.boxes.xyxy.cpu().numpy()
             confs = result.boxes.conf.cpu().numpy()
             cls_ids = result.boxes.cls.cpu().numpy().astype(int)
-            
+
             for box, c, cls_id in zip(boxes, confs, cls_ids):
-                detections.append({
-                    'class': result.names[cls_id],
-                    'confidence': float(c),
-                    'bbox': {
-                        'x1': float(box[0]),
-                        'y1': float(box[1]),
-                        'x2': float(box[2]),
-                        'y2': float(box[3])
+                detections.append(
+                    {
+                        "class": result.names[cls_id],
+                        "confidence": float(c),
+                        "bbox": {"x1": float(box[0]), "y1": float(box[1]), "x2": float(box[2]), "y2": float(box[3])},
                     }
-                })
-        
-        with open(output_path, 'rb') as f:
-            b64 = base64.b64encode(f.read()).decode('utf-8')
-        
+                )
+
+        with open(output_path, "rb") as f:
+            b64 = base64.b64encode(f.read()).decode("utf-8")
+
         result_id = str(uuid.uuid4())
-        
-        return jsonify({
-            'success': True,
-            'result_id': result_id,
-            'result_image': f"data:image/jpeg;base64,{b64}",
-            'detections': detections,
-            'num_detections': len(detections),
-            'classes_detected': list(set([d['class'] for d in detections]))
-        })
+
+        return jsonify(
+            {
+                "success": True,
+                "result_id": result_id,
+                "result_image": f"data:image/jpeg;base64,{b64}",
+                "detections": detections,
+                "num_detections": len(detections),
+                "classes_detected": list(set([d["class"] for d in detections])),
+            }
+        )
     except Exception as e:
         print(f"Error: {e}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
-@app.route('/results/<filename>')
+
+@app.route("/results/<filename>")
 def serve_result(filename):
     return send_from_directory(RESULTS_FOLDER, filename)
 
-if __name__ == '__main__':
-    print("\n" + "="*60)
+
+if __name__ == "__main__":
+    print("\n" + "=" * 60)
     print("🚀 YOLO Web Application")
-    print("="*60)
+    print("=" * 60)
     print(f"📸 Max images per upload: {MAX_UPLOAD_IMAGES}")
     print("🌐 Open: http://localhost:5000")
-    print("="*60 + "\n")
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print("=" * 60 + "\n")
+    app.run(debug=True, host="0.0.0.0", port=5000)
